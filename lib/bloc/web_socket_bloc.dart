@@ -12,7 +12,7 @@ class WebSocketBloc extends Bloc<WebSocketEvent, WebSocketState> {
 
   WebSocketBloc() : super(WebSocketInitial()) {
     // 🟢 Listen for WebSocket connection events once
-    socket = IO.io('http://192.168.1.36:3000', <String, dynamic>{
+    socket = IO.io('http://localhost:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
