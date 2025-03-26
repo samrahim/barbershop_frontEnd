@@ -1,14 +1,18 @@
-import 'package:barberfront/bloc/web_socket_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  runApp(
-    MultiBlocProvider(
-      providers: [BlocProvider(create: (context) => WebSocketBloc())],
-      child: MyApp(),
-    ),
-  );
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+
+  await dotenv.load(fileName: ".env");
+
+  OneSignal.initialize(dotenv.env['ONESIGNAL_APP_ID']!);
+  OneSignal.Notifications.requestPermission(true);
+  await OneSignal.login("12345");
+  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -21,49 +25,35 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: Home());
+    return const MaterialApp(
+      home: HomeScreen(),
+      debugShowCheckedModeBanner: false,
+    );
   }
 }
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    OneSignal.Notifications.addClickListener((event) {
+      print("Notification reçue : ${event.notification.body}");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    BlocProvider.of<WebSocketBloc>(context).add(ConnectWebSocket(1));
-
     return Scaffold(
-      appBar: AppBar(),
-
-      body: BlocBuilder<WebSocketBloc, WebSocketState>(
-        builder: (context, state) {
-          if (state is WebSocketConnected) {
-            return ListView.builder(
-              itemCount: state.bookings.length,
-              itemBuilder: (context, index) {
-                print("websocket connected");
-                final booking = state.bookings[index];
-                if (booking.isEmpty) {
-                  return Text("no booking");
-                }
-                if (booking.isNotEmpty) {
-                  return ListTile(
-                    title: Text("📅 ${booking["appointmentTime"]}"),
-                    subtitle: Text("👤 Client: ${booking["clientName"]}"),
-                  );
-                }
-                return null;
-              },
-            );
-          }
-          return Center(child: CircularProgressIndicator());
-        },
-      ),
+      appBar: AppBar(title: Text("Accueil")),
+      body: Center(child: Text("Bienvenue dans l'application Barber!")),
     );
   }
 }
