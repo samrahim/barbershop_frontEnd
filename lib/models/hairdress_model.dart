@@ -88,6 +88,10 @@ class Service {
   }
 }
 
+class Reservation {
+  late int clientId;
+}
+
 class FormattedDate {
   final String jourSemaine;
   final int numJour;

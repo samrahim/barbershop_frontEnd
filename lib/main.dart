@@ -89,10 +89,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
   @override
   void initState() {
     getServices();
-
     super.initState();
   }
 
+  Future<List>? slots;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,13 +126,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     itemCount: snap.data!.length,
                     itemBuilder: (context, ind) {
                       return Container(
+                        color: Colors.pink,
                         padding: EdgeInsets.all(12),
                         child: Column(
                           children: [
                             InkWell(
-                              // onTap: () async {
-                              //   await getPlanings("2025-04-05");
-                              // },
+                              onTap: () async {
+                                setState(() {});
+                                slots = getPlanings(snap.data![ind].day!);
+                              },
                               child: Text(
                                 convertDateFormatToCustomObject(
                                   snap.data![ind].day ?? "",
@@ -162,15 +164,19 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ),
           Expanded(
             child: FutureBuilder(
-              future: getPlanings("2025-04-07"),
+              future: slots,
               builder: (context, snap) {
                 if (snap.hasData) {
-                  return ListView.builder(
-                    itemCount: snap.data!.length,
-                    itemBuilder: (context, ind) {
-                      return Text(snap.data![ind]);
-                    },
-                  );
+                  if (snap.data!.isNotEmpty) {
+                    return ListView.builder(
+                      itemCount: snap.data!.length,
+                      itemBuilder: (context, ind) {
+                        return Text(snap.data![ind]);
+                      },
+                    );
+                  } else {
+                    return Text("no creno");
+                  }
                 } else {
                   return SizedBox();
                 }
@@ -190,13 +196,17 @@ Future<List<String>> getPlanings(String day) async {
   );
 
   List body = json.decode(response.body);
-
+  if (body.isEmpty) {
+    return [];
+  }
   plans = body.map((e) => Planing.fromJson(e)).toList();
+
   List<String> timesSlotes = getTimeSlots(
     plans[0].startTime!,
     plans[0].endTime!,
     plans[0].duration!,
   );
+  print("retunred value ==========>$timesSlotes");
   return timesSlotes;
 }
 
@@ -259,10 +269,12 @@ List<String> getTimeSlots(String startTime, String endTime, int duration) {
   int startMinutes = getMinutesFromTime(startTime);
   int endMinutes = getMinutesFromTime(endTime);
 
-  // Handle cases where end time is on the next day
   if (endMinutes < startMinutes) {
     endMinutes += 24 * 60;
   }
+  print("day ${DateTime.now().day}");
+  print("hours ${DateTime.now().hour}");
+  print("minutes ${DateTime.now().minute}");
 
   // Generate time slots
   int currentMinutes = startMinutes;
@@ -273,7 +285,7 @@ List<String> getTimeSlots(String startTime, String endTime, int duration) {
     ); // Keep in 24-hour format
     currentMinutes += duration;
   }
-
+  print("slots------->$slots");
   return slots;
 }
 
