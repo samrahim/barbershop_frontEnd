@@ -48,6 +48,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       Map<String, dynamic> body2 = json.decode(response.body);
       List body = body2['dates'];
       days = body.map((e) => Days.fromJson(e)).toList();
+
       emit(state.copyWith(days: days, isLoading: false));
     } catch (_) {
       emit(state.copyWith(isLoading: false));
@@ -65,13 +66,39 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           "http://localhost:8000/hairdresser/1/planing?start_day=${event.selectedDate}",
         ),
       );
+
       List data = json.decode(response.body);
+      if (data.isEmpty) {
+        final updatedDays =
+            state.days.map((d) {
+              return d.copyWith(isSelected: d.day == event.selectedDate);
+            }).toList();
+        emit(
+          state.copyWith(
+            slots: List.from([]),
+            isLoading: false,
+            days: updatedDays,
+          ),
+        );
+        return;
+      }
       String startTime = data[0]['start_time'];
       String endTime = data[0]['end_time'];
       int duration = data[0]['duration'];
 
       List<String> slots = getTimeSlots(startTime, endTime, duration);
-      emit(state.copyWith(slots: slots, isLoading: false));
+      final updatedDays =
+          state.days.map((d) {
+            return d.copyWith(isSelected: d.day == event.selectedDate);
+          }).toList();
+
+      emit(
+        state.copyWith(
+          slots: List.from(slots),
+          isLoading: false,
+          days: updatedDays,
+        ),
+      );
     } catch (_) {
       emit(state.copyWith(isLoading: false));
     }
@@ -81,7 +108,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     List<Service> updatedServices =
         state.services.map((e) {
           if (e == event.service) {
-            return e.copyWith(isSelected: !event.service.isSelected);
+            return event.service.copyWith(
+              isSelected: !event.service.isSelected,
+            );
           }
           return e;
         }).toList();

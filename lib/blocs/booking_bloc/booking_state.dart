@@ -19,6 +19,7 @@ class BookingState extends Equatable {
     List<Days>? days,
     List<String>? slots,
     bool? isLoading,
+    int? selectedDate,
   }) {
     return BookingState(
       services: services ?? this.services,

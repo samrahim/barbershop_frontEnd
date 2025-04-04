@@ -121,15 +121,14 @@ class FormattedDate {
   });
 }
 
-class Days {
+class Days extends Equatable {
   String? day;
   bool? available;
+  final bool isSelected;
+  Days({this.day, this.available, this.isSelected = false});
 
-  Days({this.day, this.available});
-
-  Days.fromJson(Map<String, dynamic> json) {
-    day = json['day'];
-    available = json['available'];
+  factory Days.fromJson(Map<String, dynamic> json) {
+    return Days(day: json['day'], available: json['available']);
   }
 
   Map<String, dynamic> toJson() {
@@ -137,6 +136,16 @@ class Days {
     data['day'] = day;
     data['available'] = available;
     return data;
+  }
+
+  @override
+  List<Object?> get props => [available, day, isSelected];
+  Days copyWith({String? day, bool? available, bool? isSelected}) {
+    return Days(
+      day: day ?? this.day,
+      available: available ?? this.available,
+      isSelected: isSelected ?? this.isSelected,
+    );
   }
 }
 

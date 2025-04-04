@@ -13,6 +13,7 @@ class FetchDays extends BookingEvent {}
 
 class FetchTimeSlots extends BookingEvent {
   final String selectedDate;
+
   const FetchTimeSlots(this.selectedDate);
 }
 

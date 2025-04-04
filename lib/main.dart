@@ -35,7 +35,6 @@ class BookingPage extends StatelessWidget {
             // 📌 Services disponibles
             BlocBuilder<BookingBloc, BookingState>(
               builder: (context, state) {
-                print("new build");
                 if (state.services.isEmpty) {
                   return Text(
                     "no service",
@@ -45,7 +44,6 @@ class BookingPage extends StatelessWidget {
                   return Column(
                     children:
                         state.services.map((service) {
-                          print(' state.services========>$service');
                           return CheckboxListTile(
                             title: Text(
                               service.name ?? "",
@@ -57,9 +55,9 @@ class BookingPage extends StatelessWidget {
                             ),
                             value: service.isSelected,
                             onChanged: (val) {
-                              BlocProvider.of<BookingBloc>(
-                                context,
-                              ).add(ToggleService(service));
+                              context.read<BookingBloc>().add(
+                                ToggleService(service),
+                              );
                             },
                           );
                         }).toList(),
@@ -87,8 +85,18 @@ class BookingPage extends StatelessWidget {
                             margin: EdgeInsets.all(8),
                             padding: EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color:
+                                  day.available != null && day.available!
+                                      ? Colors.white
+                                      : Colors.red,
                               borderRadius: BorderRadius.circular(8),
+                              border:
+                                  day.isSelected
+                                      ? Border.all(
+                                        color: Colors.purple,
+                                        width: 2,
+                                      )
+                                      : null,
                             ),
                             child: Text(day.day ?? ""),
                           ),
@@ -104,20 +112,24 @@ class BookingPage extends StatelessWidget {
             // 📌 Créneaux horaires
             BlocBuilder<BookingBloc, BookingState>(
               builder: (context, state) {
-                return Wrap(
-                  children:
-                      state.slots.map((slot) {
-                        return Container(
-                          margin: EdgeInsets.all(8),
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.grey,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(slot),
-                        );
-                      }).toList(),
-                );
+                if (state.slots.isNotEmpty) {
+                  return Wrap(
+                    children:
+                        state.slots.map((slot) {
+                          return Container(
+                            margin: EdgeInsets.all(8),
+                            padding: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.grey,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(slot),
+                          );
+                        }).toList(),
+                  );
+                } else {
+                  return Text("no crenos");
+                }
               },
             ),
           ],
