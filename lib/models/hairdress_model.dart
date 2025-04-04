@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
 
 class Hairdress {
@@ -46,14 +47,13 @@ Future<List<Hairdress>> getHairDressers() async {
   return hairdressers;
 }
 
-class Service {
+class Service extends Equatable {
   int? id;
   int? hairdresserId;
   String? name;
   int? price;
   int? duration;
-  String? createdAt;
-  String? updatedAt;
+  bool isSelected;
 
   Service({
     this.id,
@@ -61,18 +61,18 @@ class Service {
     this.name,
     this.price,
     this.duration,
-    this.createdAt,
-    this.updatedAt,
+
+    this.isSelected = false,
   });
 
-  Service.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    hairdresserId = json['hairdresser_id'];
-    name = json['name'];
-    price = json['price'];
-    duration = json['duration'];
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
+  factory Service.fromJson(Map<String, dynamic> json) {
+    return Service(
+      hairdresserId: json['hairdresser_id'],
+      id: json['id'],
+      name: json['name'],
+      price: json['price'],
+      duration: json['duration'],
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -82,10 +82,26 @@ class Service {
     data['name'] = name;
     data['price'] = price;
     data['duration'] = duration;
-    data['createdAt'] = createdAt;
-    data['updatedAt'] = updatedAt;
+
     return data;
   }
+
+  Service copyWith({
+    String? name,
+    int? price,
+    int? duration,
+    bool? isSelected,
+  }) {
+    return Service(
+      name: name ?? this.name,
+      price: price ?? this.price,
+      duration: duration ?? this.duration,
+      isSelected: isSelected ?? this.isSelected,
+    );
+  }
+
+  @override
+  List<Object?> get props => [name, price, isSelected, duration];
 }
 
 class Reservation {

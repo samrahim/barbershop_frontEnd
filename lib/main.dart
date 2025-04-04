@@ -1,189 +1,127 @@
 import 'dart:convert';
 
+import 'package:barberfront/blocs/booking_bloc/booking_bloc.dart';
 import 'package:barberfront/models/hairdress_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
-void main() async {
-  await initializeDateFormatting();
-  runApp(const MyApp());
+void main() {
+  runApp(
+    BlocProvider(
+      create:
+          (context) =>
+              BookingBloc()
+                ..add(FetchServices())
+                ..add(FetchDays()),
+      child: MaterialApp(home: BookingPage()),
+    ),
+  );
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomeScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    getHairDressers();
-    super.initState();
-  }
+class BookingPage extends StatelessWidget {
+  const BookingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Accueil")),
-      body: FutureBuilder(
-        future: getHairDressers(),
-        builder: (context, snap) {
-          if (snap.hasData) {
-            return ListView.builder(
-              itemCount: snap.data!.length,
-              itemBuilder: (context, ind) {
-                return ListTile(
-                  title: Text(snap.data![ind].name ?? ""),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                DetailsScreen(id: snap.data![ind].id ?? 0),
-                      ),
-                    );
-                  },
+      backgroundColor: Colors.black,
+      appBar: AppBar(title: Text("Réservation"), backgroundColor: Colors.black),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // 📌 Services disponibles
+            BlocBuilder<BookingBloc, BookingState>(
+              builder: (context, state) {
+                print("new build");
+                if (state.services.isEmpty) {
+                  return Text(
+                    "no service",
+                    style: TextStyle(color: Colors.white),
+                  );
+                } else {
+                  return Column(
+                    children:
+                        state.services.map((service) {
+                          print(' state.services========>$service');
+                          return CheckboxListTile(
+                            title: Text(
+                              service.name ?? "",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              "${service.price} DA - ${service.duration} min",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            value: service.isSelected,
+                            onChanged: (val) {
+                              BlocProvider.of<BookingBloc>(
+                                context,
+                              ).add(ToggleService(service));
+                            },
+                          );
+                        }).toList(),
+                  );
+                }
+              },
+            ),
+
+            SizedBox(height: 20),
+            Text("Jours disponibles", style: TextStyle(color: Colors.white)),
+
+            // 📌 Jours disponibles
+            BlocBuilder<BookingBloc, BookingState>(
+              builder: (context, state) {
+                return Wrap(
+                  children:
+                      state.days.map((day) {
+                        return GestureDetector(
+                          onTap: () {
+                            context.read<BookingBloc>().add(
+                              FetchTimeSlots(day.day ?? ""),
+                            );
+                          },
+                          child: Container(
+                            margin: EdgeInsets.all(8),
+                            padding: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(day.day ?? ""),
+                          ),
+                        );
+                      }).toList(),
                 );
               },
-            );
-          } else {
-            return Text("No such element ");
-          }
-        },
-      ),
-    );
-  }
-}
+            ),
 
-class DetailsScreen extends StatefulWidget {
-  int id;
-  DetailsScreen({super.key, required this.id});
+            SizedBox(height: 20),
+            Text("Horaires disponibles", style: TextStyle(color: Colors.white)),
 
-  @override
-  State<DetailsScreen> createState() => _DetailsScreenState();
-}
-
-class _DetailsScreenState extends State<DetailsScreen> {
-  @override
-  void initState() {
-    getServices();
-    super.initState();
-  }
-
-  Future<List>? slots;
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder(
-              future: getServices(),
-              builder: (context, snap) {
-                if (snap.hasData) {
-                  return ListView.builder(
-                    itemCount: snap.data!.length,
-                    itemBuilder: (context, ind) {
-                      return ListTile(title: Text(snap.data![ind].name ?? ""));
-                    },
-                  );
-                } else {
-                  return CircularProgressIndicator();
-                }
+            // 📌 Créneaux horaires
+            BlocBuilder<BookingBloc, BookingState>(
+              builder: (context, state) {
+                return Wrap(
+                  children:
+                      state.slots.map((slot) {
+                        return Container(
+                          margin: EdgeInsets.all(8),
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(slot),
+                        );
+                      }).toList(),
+                );
               },
             ),
-          ),
-          Expanded(
-            child: FutureBuilder(
-              future: getDays(),
-              builder: (context, snap) {
-                if (snap.hasData) {
-                  return ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: snap.data!.length,
-                    itemBuilder: (context, ind) {
-                      return Container(
-                        color: Colors.pink,
-                        padding: EdgeInsets.all(12),
-                        child: Column(
-                          children: [
-                            InkWell(
-                              onTap: () async {
-                                setState(() {});
-                                slots = getPlanings(snap.data![ind].day!);
-                              },
-                              child: Text(
-                                convertDateFormatToCustomObject(
-                                  snap.data![ind].day ?? "",
-                                ).jourSemaine,
-                              ),
-                            ),
-                            Text(
-                              convertDateFormatToCustomObject(
-                                snap.data![ind].day ?? "",
-                              ).numJour.toString(),
-                            ),
-                            Text(
-                              convertDateFormatToCustomObject(
-                                snap.data![ind].day ?? "",
-                              ).mois.toString(),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                } else {
-                  return CircularProgressIndicator();
-                }
-              },
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder(
-              future: slots,
-              builder: (context, snap) {
-                if (snap.hasData) {
-                  if (snap.data!.isNotEmpty) {
-                    return ListView.builder(
-                      itemCount: snap.data!.length,
-                      itemBuilder: (context, ind) {
-                        return Text(snap.data![ind]);
-                      },
-                    );
-                  } else {
-                    return Text("no creno");
-                  }
-                } else {
-                  return SizedBox();
-                }
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -272,9 +210,6 @@ List<String> getTimeSlots(String startTime, String endTime, int duration) {
   if (endMinutes < startMinutes) {
     endMinutes += 24 * 60;
   }
-  print("day ${DateTime.now().day}");
-  print("hours ${DateTime.now().hour}");
-  print("minutes ${DateTime.now().minute}");
 
   // Generate time slots
   int currentMinutes = startMinutes;
@@ -285,7 +220,7 @@ List<String> getTimeSlots(String startTime, String endTime, int duration) {
     ); // Keep in 24-hour format
     currentMinutes += duration;
   }
-  print("slots------->$slots");
+
   return slots;
 }
 
