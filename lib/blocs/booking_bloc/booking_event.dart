@@ -1,25 +1,41 @@
 part of 'booking_bloc.dart';
 
-abstract class BookingEvent extends Equatable {
-  const BookingEvent();
+abstract class BookingEvent extends Equatable {}
 
+class FetchServices extends BookingEvent {
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
-class FetchServices extends BookingEvent {}
-
-class FetchDays extends BookingEvent {}
+class FetchDays extends BookingEvent {
+  @override
+  List<Object?> get props => [];
+}
 
 class FetchTimeSlots extends BookingEvent {
   final String selectedDate;
 
-  const FetchTimeSlots(this.selectedDate);
+  FetchTimeSlots(this.selectedDate);
+
+  @override
+  List<Object?> get props => [selectedDate];
 }
 
 class ToggleService extends BookingEvent {
   final Service service;
-  const ToggleService(this.service);
+  ToggleService(this.service);
+
+  @override
+  List<Object?> get props => [service];
+}
+
+class SelectSlot extends BookingEvent {
+  final String slot;
+
+  SelectSlot({required this.slot});
+
+  @override
+  List<Object?> get props => [slot];
 }
 
 class MakeBooking extends BookingEvent {
@@ -27,7 +43,7 @@ class MakeBooking extends BookingEvent {
   final String selectedDay;
   final String selectedSlot;
 
-  const MakeBooking({
+  MakeBooking({
     required this.selectedServices,
     required this.selectedDay,
     required this.selectedSlot,

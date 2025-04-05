@@ -11,12 +11,21 @@ part 'booking_state.dart';
 
 class BookingBloc extends Bloc<BookingEvent, BookingState> {
   BookingBloc()
-    : super(BookingState(services: [], days: [], slots: [], isLoading: false)) {
+    : super(
+        BookingState(
+          services: [],
+          days: [],
+          slots: [],
+          isLoading: false,
+          selectedSlot: '',
+        ),
+      ) {
     on<FetchServices>(_fetchServices);
     on<FetchDays>(_fetchDays);
     on<FetchTimeSlots>(_fetchTimeSlots);
     on<ToggleService>(_toggleService);
     on<MakeBooking>(_makeBooking);
+    on<SelectSlot>(_selectSlot);
   }
 
   Future<void> _fetchServices(
@@ -119,6 +128,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     emit(state.copyWith(services: updatedServices));
   }
 
+  _selectSlot(SelectSlot event, Emitter<BookingState> emit) {
+    print('i called ${event.slot}');
+    emit(state.copyWith(selectedSlot: event.slot));
+
+    print(state.selectedSlot);
+  }
+
   Future<void> _makeBooking(
     MakeBooking event,
     Emitter<BookingState> emit,
@@ -141,9 +157,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       final bookingData = {
         'services': selectedServices,
         'day': selectedDay,
-        'slot': state.slots,
+        'slot': state.selectedSlot,
       };
-      print(bookingData['day']);
+      print(bookingData['slot']);
 
       // Send the booking data to the backend API
       // final response = await http.post(

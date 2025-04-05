@@ -195,16 +195,28 @@ class BookingPage extends StatelessWidget {
                     children:
                         state.slots.map((slot) {
                           return GestureDetector(
-                            onTap: () {},
+                            onTap: () {
+                              context.read<BookingBloc>().add(
+                                SelectSlot(slot: slot),
+                              );
+                            },
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[800],
+                                color:
+                                    state.selectedSlot == slot
+                                        ? Colors.black
+                                        : Colors.grey,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
                                 child: Text(
                                   slot,
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(
+                                    color:
+                                        state.selectedSlot == slot
+                                            ? Colors.yellow
+                                            : Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
