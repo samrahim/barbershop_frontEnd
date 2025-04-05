@@ -27,6 +27,5 @@ class UpdateBookings extends WebSocketEvent {
   UpdateBookings(this.bookings);
 
   @override
-  // TODO: implement props
   List<Object?> get props => [bookings];
 }

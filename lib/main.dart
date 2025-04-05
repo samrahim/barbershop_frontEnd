@@ -1,13 +1,16 @@
 import 'dart:convert';
 
 import 'package:barberfront/blocs/booking_bloc/booking_bloc.dart';
-import 'package:barberfront/models/hairdress_model.dart';
+import 'package:barberfront/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'package:intl/intl.dart';
 
-void main() {
+void main() async {
+  await initializeDateFormatting('fr_FR');
   runApp(
     BlocProvider(
       create:
@@ -15,7 +18,10 @@ void main() {
               BookingBloc()
                 ..add(FetchServices())
                 ..add(FetchDays()),
-      child: MaterialApp(home: BookingPage()),
+      child: MaterialApp(
+        home: BookingPage(),
+        debugShowCheckedModeBanner: false,
+      ),
     ),
   );
 }
@@ -27,17 +33,30 @@ class BookingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: Text("Réservation"), backgroundColor: Colors.black),
-      body: Padding(
+      appBar: AppBar(
+        title: Text("Réservation"),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 📌 Services disponibles
+            Text(
+              "Services disponibles",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
             BlocBuilder<BookingBloc, BookingState>(
               builder: (context, state) {
                 if (state.services.isEmpty) {
                   return Text(
-                    "no service",
+                    "Aucun service disponible",
                     style: TextStyle(color: Colors.white),
                   );
                 } else {
@@ -45,6 +64,8 @@ class BookingPage extends StatelessWidget {
                     children:
                         state.services.map((service) {
                           return CheckboxListTile(
+                            checkColor: Colors.black,
+                            activeColor: Colors.white,
                             title: Text(
                               service.name ?? "",
                               style: TextStyle(color: Colors.white),
@@ -67,70 +88,148 @@ class BookingPage extends StatelessWidget {
             ),
 
             SizedBox(height: 20),
-            Text("Jours disponibles", style: TextStyle(color: Colors.white)),
-
-            // 📌 Jours disponibles
+            Text(
+              "Jours disponibles",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
             BlocBuilder<BookingBloc, BookingState>(
               builder: (context, state) {
-                return Wrap(
-                  children:
-                      state.days.map((day) {
-                        return GestureDetector(
-                          onTap: () {
-                            context.read<BookingBloc>().add(
-                              FetchTimeSlots(day.day ?? ""),
-                            );
-                          },
-                          child: Container(
-                            margin: EdgeInsets.all(8),
-                            padding: EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color:
-                                  day.available != null && day.available!
-                                      ? Colors.white
-                                      : Colors.red,
-                              borderRadius: BorderRadius.circular(8),
-                              border:
-                                  day.isSelected
-                                      ? Border.all(
-                                        color: Colors.purple,
-                                        width: 2,
-                                      )
-                                      : null,
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children:
+                        state.days.map((day) {
+                          final formatedDay = convertDateFormatToCustomObject(
+                            day.day!,
+                          );
+                          Color colors = Colors.black;
+                          Color textColor = Colors.white;
+                          if (!day.available!) {
+                            textColor = Colors.amber;
+                            colors = Colors.black;
+                          }
+                          if (day.isSelected) {
+                            textColor = Colors.black;
+                            colors = Colors.amber;
+                          }
+                          return GestureDetector(
+                            onTap: () {
+                              if (day.available!) {
+                                context.read<BookingBloc>().add(
+                                  FetchTimeSlots(day.day ?? ""),
+                                );
+                              } else {}
+                            },
+                            child: Container(
+                              margin: EdgeInsets.only(right: 4),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors,
+
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    formatedDay.jourSemaine
+                                        .substring(0, 3)
+                                        .toString(),
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  Text(
+                                    formatedDay.numJour.toString(),
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    formatedDay.mois.substring(0, 3).toString(),
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Text(day.day ?? ""),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                  ),
                 );
               },
             ),
 
             SizedBox(height: 20),
-            Text("Horaires disponibles", style: TextStyle(color: Colors.white)),
-
-            // 📌 Créneaux horaires
+            Text(
+              "Horaires disponibles",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
             BlocBuilder<BookingBloc, BookingState>(
               builder: (context, state) {
                 if (state.slots.isNotEmpty) {
-                  return Wrap(
+                  return GridView.count(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 2.2,
                     children:
                         state.slots.map((slot) {
-                          return Container(
-                            margin: EdgeInsets.all(8),
-                            padding: EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.grey,
-                              borderRadius: BorderRadius.circular(8),
+                          return GestureDetector(
+                            onTap: () {},
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[800],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  slot,
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
                             ),
-                            child: Text(slot),
                           );
                         }).toList(),
                   );
                 } else {
-                  return Text("no crenos");
+                  return Text(
+                    "Aucun créneau disponible",
+                    style: TextStyle(color: Colors.white),
+                  );
                 }
               },
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.read<BookingBloc>().add(
+                  MakeBooking(
+                    selectedDay: "",
+                    selectedServices: [],
+                    selectedSlot: '',
+                  ),
+                );
+              },
+              child: Text("add book"),
             ),
           ],
         ),
@@ -156,7 +255,6 @@ Future<List<String>> getPlanings(String day) async {
     plans[0].endTime!,
     plans[0].duration!,
   );
-  print("retunred value ==========>$timesSlotes");
   return timesSlotes;
 }
 
@@ -167,24 +265,26 @@ FormattedDate convertDateFormatToCustomObject(String dateString) {
     final jourFormatter = DateFormat('EEEE', 'fr_FR');
     final jourSemaine = jourFormatter.format(dateTime);
 
-    final numJour = dateTime.day;
-    final year = dateTime.year;
+    final numJour = dateTime.day.toString().padLeft(2, '0');
+
+    final year = dateTime.year.toString();
+
     final moisFormatter = DateFormat('MMMM', 'fr_FR');
     final moisComplet = moisFormatter.format(dateTime);
 
     return FormattedDate(
-      year: year.toString(),
+      year: year,
       jourSemaine: jourSemaine,
       numJour: numJour,
       mois: moisComplet,
     );
   } catch (e) {
-    print('Erreur lors de l\'analyse de la date : $e');
+    print(e);
     return FormattedDate(
       jourSemaine: 'Invalide',
-      numJour: 0,
+      numJour: '00',
       mois: 'Invalide',
-      year: "invalide",
+      year: 'Invalide',
     );
   }
 }
@@ -223,13 +323,9 @@ List<String> getTimeSlots(String startTime, String endTime, int duration) {
     endMinutes += 24 * 60;
   }
 
-  // Generate time slots
   int currentMinutes = startMinutes;
   while (currentMinutes + duration <= endMinutes) {
-    // Ensure last slot does not exceed end time
-    slots.add(
-      formatMinutesToTime(currentMinutes % (24 * 60)),
-    ); // Keep in 24-hour format
+    slots.add(formatMinutesToTime(currentMinutes % (24 * 60)));
     currentMinutes += duration;
   }
 

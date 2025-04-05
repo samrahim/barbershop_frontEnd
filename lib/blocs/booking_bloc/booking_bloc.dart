@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:barberfront/main.dart';
-import 'package:barberfront/models/hairdress_model.dart';
+import 'package:barberfront/models/models.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +16,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<FetchDays>(_fetchDays);
     on<FetchTimeSlots>(_fetchTimeSlots);
     on<ToggleService>(_toggleService);
+    on<MakeBooking>(_makeBooking);
   }
 
   Future<void> _fetchServices(
@@ -116,5 +117,45 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         }).toList();
 
     emit(state.copyWith(services: updatedServices));
+  }
+
+  Future<void> _makeBooking(
+    MakeBooking event,
+    Emitter<BookingState> emit,
+  ) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+      List<String> selectedServices = [];
+
+      for (var selected in state.services) {
+        if (selected.isSelected) {
+          selectedServices.add(selected.id.toString());
+        }
+      }
+      String selectedDay = '';
+      for (var day in state.days) {
+        if (day.isSelected) {
+          selectedDay = day.day!;
+        }
+      }
+      final bookingData = {
+        'services': selectedServices,
+        'day': selectedDay,
+        'slot': state.slots,
+      };
+      print(bookingData['day']);
+
+      // Send the booking data to the backend API
+      // final response = await http.post(
+      //   Uri.parse("http://localhost:8000/bookings"),
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: json.encode(bookingData),
+      // );
+
+      // if (response.statusCode == 201) {
+      // } else {}
+    } finally {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 }

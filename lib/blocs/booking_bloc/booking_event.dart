@@ -21,3 +21,18 @@ class ToggleService extends BookingEvent {
   final Service service;
   const ToggleService(this.service);
 }
+
+class MakeBooking extends BookingEvent {
+  final List<Service> selectedServices;
+  final String selectedDay;
+  final String selectedSlot;
+
+  const MakeBooking({
+    required this.selectedServices,
+    required this.selectedDay,
+    required this.selectedSlot,
+  });
+
+  @override
+  List<Object> get props => [selectedServices, selectedDay, selectedSlot];
+}
